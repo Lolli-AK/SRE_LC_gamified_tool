@@ -1,0 +1,24 @@
+[
+    {
+      "id": "two-sum",
+      "title": "Two Sum",
+      "difficulty": "easy",
+      "tags": ["array", "hash-table"],
+      "baseline_ms": 45000,
+      "statement": "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.",
+      "canonical_solution_language": "python",
+      "canonical_solution_code": "def twoSum(nums, target):\n    seen = {}\n    for i, x in enumerate(nums):\n        y = target - x\n        if y in seen:\n            return [seen[y], i]\n        seen[x] = i\n",
+      "time_complexity": "O(n)"
+    },
+    {
+      "id": "valid-parentheses",
+      "title": "Valid Parentheses",
+      "difficulty": "easy",
+      "tags": ["stack"],
+      "baseline_ms": 60000,
+      "statement": "Given a string s containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid.",
+      "canonical_solution_language": "python",
+      "canonical_solution_code": "def isValid(s):\n    stack = []\n    pairs = {')':'(', ']':'[', '}':'{'}\n    for c in s:\n        if c in pairs:\n            if not stack or stack.pop() != pairs[c]:\n                return False\n        else:\n            stack.append(c)\n    return not stack\n",
+      "time_complexity": "O(n)"
+    }
+  ]
