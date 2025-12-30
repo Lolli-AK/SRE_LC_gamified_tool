@@ -1,0 +1,6 @@
+commands to run dockerfile:
+docker build -t sre-lc-api .
+docker run -p 8000:8000 sre-lc-api
+
+activate python environment:
+source .venv/bin/activate
