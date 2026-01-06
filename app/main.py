@@ -1,6 +1,7 @@
 import json
 import os
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Literal
 
@@ -66,3 +67,14 @@ def race(req: RaceRequest):
             }
 
     raise HTTPException(status_code=404, detail="Problem not found")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)

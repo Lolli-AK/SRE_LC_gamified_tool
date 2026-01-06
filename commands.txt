@@ -4,3 +4,9 @@ docker run -p 8000:8000 sre-lc-api
 
 activate python environment:
 source .venv/bin/activate
+
+see frontend: (have to BE in frontend directory)
+npm run dev
+
+see backend: (have to see app module in directory before running)
+uvicorn app.main:app --reload --port 8000
