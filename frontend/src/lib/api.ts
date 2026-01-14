@@ -1,19 +1,8 @@
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8000";
 
-export type ProblemListItem = {
-  id: string;
-  title: string;
-  difficulty: "easy" | "medium" | "hard";
-  tags: string[];
-  baseline_ms: number;
-};
+import type { ProblemListItem, ProblemDetail } from "../types/problem";
 
-export type ProblemDetail = ProblemListItem & {
-  statement: string;
-  canonical_solution_language: string;
-  canonical_solution_code: string;
-  time_complexity: string;
-};
+type HealthResponse = { status: string };
 
 export type RaceRequest = {
   problem_id: string;
@@ -41,10 +30,44 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json();
 }
 
+const BASE = import.meta.env.VITE_API_BASE;
+
 export const api = {
-  health: () => http<{ status: string }>("/health"),
-  listProblems: () => http<ProblemListItem[]>("/problems"),
-  getProblem: (id: string) => http<ProblemDetail>(`/problems/${id}`),
-  race: (body: RaceRequest) =>
-    http<RaceResponse>("/race", { method: "POST", body: JSON.stringify(body) }),
+  async getProblems(): Promise<ProblemListItem[]> {
+    const res = await fetch(`${BASE}/problems`);
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  async race(body: RaceRequest): Promise<RaceResponse> {
+    const res = await fetch(`${import.meta.env.VITE_API_BASE}/race`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  async getProblem(id: string): Promise<ProblemDetail> {
+    const res = await fetch(`${BASE}/problems/${id}`);
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  async execute(body: { problem_id: string; code: string; language: "python" }) {
+    const res = await fetch(`${BASE}/execute`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  async health(): Promise<HealthResponse> {
+    const res = await fetch(`${import.meta.env.VITE_API_BASE}/health`);
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
 };

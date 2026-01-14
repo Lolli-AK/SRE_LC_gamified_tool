@@ -3,12 +3,15 @@
       "id": "two-sum",
       "title": "Two Sum",
       "difficulty": "easy",
-      "tags": ["array", "hash-table"],
-      "baseline_ms": 45000,
-      "statement": "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.",
-      "canonical_solution_language": "python",
-      "canonical_solution_code": "def twoSum(nums, target):\n    seen = {}\n    for i, x in enumerate(nums):\n        y = target - x\n        if y in seen:\n            return [seen[y], i]\n        seen[x] = i\n",
-      "time_complexity": "O(n)"
+      "tags": ["array", "hashmap"],
+      "baseline_ms": 120,
+      "statement": "Given ...",
+      "function_signature": "def solution(nums, target):",
+      "starter_code": "def solution(nums, target):\n    # TODO\n    pass\n",
+      "samples": [
+        { "args_json": "[[2,7,11,15], 9]", "expected_json": "[0,1]" },
+        { "args_json": "[[3,2,4], 6]", "expected_json": "[1,2]" }
+      ]
     },
     {
       "id": "valid-parentheses",

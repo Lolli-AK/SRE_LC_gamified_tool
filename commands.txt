@@ -10,3 +10,8 @@ npm run dev
 
 see backend: (have to see app module in directory before running)
 uvicorn app.main:app --reload --port 8000
+
+
+/Users/aamukthakottapalli/Downloads/CLASSES/code/SRE_LC_gamified_tool/app/data
+
+PROBLEMS_PATH="$(pwd)/app/data/problems.json" uvicorn app.main:app --reload --port 8000

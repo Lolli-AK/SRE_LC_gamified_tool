@@ -4,6 +4,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Literal
+from app.models_execute import ExecuteRequest, ExecuteResponse
+from app.judge import run_python_in_docker
 
 app = FastAPI()
 
@@ -78,3 +80,35 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.post("/execute", response_model=ExecuteResponse)
+def execute(req: ExecuteRequest):
+    if req.language != "python":
+        raise HTTPException(status_code=400, detail="Only python supported")
+
+    if "def solution" not in req.code:
+        raise HTTPException(status_code=400, detail="Code must define def solution(...):")
+
+    problem = load_problems(req.problem_id)  # use your existing function
+    samples = problem.get("samples", [])
+    if not samples:
+        raise HTTPException(status_code=400, detail="No samples configured for this problem")
+
+    tests = []
+    for s in samples:
+        try:
+            args = json.loads(s["args_json"])
+            expected = json.loads(s["expected_json"])
+        except Exception:
+            raise HTTPException(status_code=500, detail="Invalid sample JSON format")
+
+        if not isinstance(args, list):
+            raise HTTPException(status_code=500, detail="args_json must be a JSON list of positional args")
+
+        tests.append({"args": args, "expected": expected})
+
+    result = run_python_in_docker(user_code=req.code, tests=tests, timeout_s=3)
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+
+    return result
