@@ -9,6 +9,16 @@ from app.judge import run_python_in_docker
 
 app = FastAPI()
 
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
@@ -22,6 +32,7 @@ def load_problems():
         raise RuntimeError(f"Problems file not found at {path}")
 
 
+
 @app.get("/problems")
 def list_problems():
     return load_problems()
@@ -30,7 +41,7 @@ def list_problems():
 def get_problem(problem_id: str):
     problems = load_problems()
     for p in problems:
-        if p["id"] == problem_id:
+        if p.get("id") == problem_id:
             return p
     raise HTTPException(status_code=404, detail="Problem not found")
 
@@ -89,7 +100,10 @@ def execute(req: ExecuteRequest):
     if "def solution" not in req.code:
         raise HTTPException(status_code=400, detail="Code must define def solution(...):")
 
-    problem = load_problems(req.problem_id)  # use your existing function
+    problem = load_problems()
+    problem = get_problem(req.problem_id)
+    if not problem:
+        raise HTTPException(status_code=404, detail="Problem not found")
     samples = problem.get("samples", [])
     if not samples:
         raise HTTPException(status_code=400, detail="No samples configured for this problem")

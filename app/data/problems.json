@@ -23,5 +23,9 @@
       "canonical_solution_language": "python",
       "canonical_solution_code": "def isValid(s):\n    stack = []\n    pairs = {')':'(', ']':'[', '}':'{'}\n    for c in s:\n        if c in pairs:\n            if not stack or stack.pop() != pairs[c]:\n                return False\n        else:\n            stack.append(c)\n    return not stack\n",
       "time_complexity": "O(n)"
+    },
+    {
+      "input": ["()"],
+      "output": true
     }
-  ]
+]
