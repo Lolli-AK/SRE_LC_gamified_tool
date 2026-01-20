@@ -2,101 +2,71 @@ import json
 import os
 import subprocess
 import tempfile
-import time
-from pathlib import Path
-from typing import Any, Dict, List, Tuple
+import textwrap
+from typing import List, Dict
 
-DOCKER_IMAGE = os.getenv("JUDGE_PY_IMAGE", "python:3.11-slim")
-
-RUNNER_CODE = r"""
+def run_python_subprocess(user_code: str, tests: List[dict], timeout_s: int = 3):
+    """
+    Runs ALL tests in one python process inside the backend container.
+    Returns a dict matching ExecuteResponse.
+    """
+    harness = f"""
 import json, time, traceback
 
-# user code injected below
-USER_CODE
+{user_code}
 
-def _run_one(args):
+tests = json.loads({json.dumps(json.dumps(tests))})
+out_tests = []
+total_start = time.perf_counter()
+
+for i, t in enumerate(tests):
     start = time.perf_counter()
     try:
-        # args is a list/tuple of positional args
-        out = solution(*args)
-        ok = True
+        actual = solution(*t["args"])
+        passed = actual == t["expected"]
         err = None
     except Exception as e:
-        out = None
-        ok = False
-        err = traceback.format_exc(limit=5)
-    end = time.perf_counter()
-    return ok, out, int((end - start) * 1000), err
+        actual = None
+        passed = False
+        err = traceback.format_exc()
+        
+    runtime_ms = int((time.perf_counter() - start) * 1000)
+    out_tests.append({{
+        "index": i,
+        "passed": passed,
+        "actual_json": json.dumps(actual),
+        "expected_json": json.dumps(t["expected"]),
+        "runtime_ms": runtime_ms,
+        "error": err
+    }})
+total_runtime_ms = int((time.perf_counter() - total_start) * 1000)
 
-def main():
-    payload = json.load(open("payload.json", "r"))
-    tests = payload["tests"]
-    results = []
-    total = 0
-
-    for i, t in enumerate(tests):
-        args = t["args"]
-        expected = t["expected"]
-        ok, out, ms, err = _run_one(args)
-        total += ms
-
-        passed = ok and out == expected
-        results.append({
-            "index": i,
-            "passed": passed,
-            "actual_json": json.dumps(out),
-            "expected_json": json.dumps(expected),
-            "runtime_ms": ms,
-            "error": err if err and not passed else None
-        })
-
-    print(json.dumps({"tests": results, "total_runtime_ms": total}))
-if __name__ == "__main__":
-    main()
+print(json.dumps({{
+    "tests": out_tests,
+    "total_runtime_ms": total_runtime_ms
+}}))
 """
-
-def run_python_in_docker(user_code: str, tests: List[Dict[str, Any]], timeout_s: int = 3) -> Dict[str, Any]:
-    """
-    tests: [{ "args": [...], "expected": ... }]
-    returns parsed JSON from runner stdout
-    """
-    with tempfile.TemporaryDirectory() as td:
-        work = Path(td)
-
-        # Write payload
-        (work / "payload.json").write_text(json.dumps({"tests": tests}), encoding="utf-8")
-
-        # Inject user code
-        runner = RUNNER_CODE.replace("USER_CODE", user_code)
-        (work / "runner.py").write_text(runner, encoding="utf-8")
-
-        cmd = [
-            "docker", "run", "--rm",
-            "--network", "none",
-            "--read-only",
-            "--pids-limit", "64",
-            "--cpus", "1",
-            "--memory", "256m",
-            "-v", f"{work}:/work:rw",
-            "-w", "/work",
-            DOCKER_IMAGE,
-            "python", "runner.py"
-        ]
-
-        start = time.perf_counter()
+    with tempfile.TemporaryDirectory() as d:
+        fp = os.path.join(d, "run.py")
+        with open (fp, "w", encoding="utf-8") as f:
+            f.write(harness)
         try:
             p = subprocess.run(
-                cmd,
+                ["python3", fp],
                 capture_output=True,
                 text=True,
-                timeout=timeout_s
+                timeout=timeout_s,
             )
         except subprocess.TimeoutExpired:
-            return {"tests": [], "total_runtime_ms": int((time.perf_counter() - start) * 1000), "error": "timeout"}
-
+            return {"error" : f"timed out after {timeout_s}s"}
+        
         if p.returncode != 0:
-            return {"tests": [], "total_runtime_ms": int((time.perf_counter() - start) * 1000), "error": p.stderr.strip()[:2000]}
-
-        # stdout is JSON
-        out = p.stdout.strip().splitlines()[-1]
-        return json.loads(out)
+            print("this code is running before the error hits")
+            # error the code the user has written
+            msg = (p.stderr or p.stdout).strip()[:2000]  # cap length
+            return {"error": msg or f"subprocess exited with code {p.returncode}", "stderr": p.stderr}
+        try:
+            # another check for faulty user code
+            return json.loads(p.stdout)
+        except Exception:
+            return {"error": "failed to parse runner output", "stdout": p.stdout, "stderr": p.stderr}

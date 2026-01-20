@@ -5,16 +5,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Literal
 from app.models_execute import ExecuteRequest, ExecuteResponse
-from app.judge import run_python_in_docker
+from app.judge import run_python_subprocess
 
 app = FastAPI()
 
-from fastapi.middleware.cors import CORSMiddleware
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=False,  # keep false unless you use cookies/auth
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -81,17 +82,6 @@ def race(req: RaceRequest):
 
     raise HTTPException(status_code=404, detail="Problem not found")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 @app.post("/execute", response_model=ExecuteResponse)
 def execute(req: ExecuteRequest):
     if req.language != "python":
@@ -121,8 +111,8 @@ def execute(req: ExecuteRequest):
 
         tests.append({"args": args, "expected": expected})
 
-    result = run_python_in_docker(user_code=req.code, tests=tests, timeout_s=3)
+    result = run_python_subprocess(user_code=req.code, tests=tests, timeout_s=3)
     if "error" in result:
-        raise HTTPException(status_code=400, detail=result["error"])
+        raise HTTPException(status_code=400, detail=result)
 
     return result
