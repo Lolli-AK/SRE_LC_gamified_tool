@@ -18,3 +18,4 @@ PROBLEMS_PATH="$(pwd)/app/data/problems.json" uvicorn app.main:app --reload --po
 
 # find a function from project root:
 grep -R "def load_problems" -n .
+grep -R "run_python_in_docker" -n .

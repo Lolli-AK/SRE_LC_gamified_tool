@@ -1,5 +1,6 @@
 import json
 import os
+import random
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -23,6 +24,17 @@ app.add_middleware(
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+def get_problem_payload(problem_id: str | None = None) -> dict:
+    problems = load_problems()
+
+    if problem_id is None:
+        p.random.choice(problems)
+    else:
+        p = next((p for p in problems if p["id"] == problem_id), None)
+        if p is None:
+            raise HTTPException(status_code=404, detail="Problem not found")
+    return p
 
 def load_problems():
     path = os.getenv("PROBLEMS_PATH", "problems.json")
@@ -116,3 +128,10 @@ def execute(req: ExecuteRequest):
         raise HTTPException(status_code=400, detail=result)
 
     return result
+
+'''	•	POST /rooms
+	•	POST /rooms/{room_id}/join
+	•	GET /rooms/{room_id}
+	•	WS /ws/{room_id}
+'''
+
