@@ -29,7 +29,7 @@ def get_problem_payload(problem_id: str | None = None) -> dict:
     problems = load_problems()
 
     if problem_id is None:
-        p.random.choice(problems)
+        p = random.choice(problems)
     else:
         p = next((p for p in problems if p["id"] == problem_id), None)
         if p is None:
@@ -102,7 +102,6 @@ def execute(req: ExecuteRequest):
     if "def solution" not in req.code:
         raise HTTPException(status_code=400, detail="Code must define def solution(...):")
 
-    problem = load_problems()
     problem = get_problem(req.problem_id)
     if not problem:
         raise HTTPException(status_code=404, detail="Problem not found")
