@@ -37,6 +37,8 @@ def get_problem_payload(problem_id: str | None = None) -> dict:
             raise HTTPException(status_code=404, detail="Problem not found")
     return p
 
+room_store = RoomStore(get_problem_payload=get_problem_payload)
+
 def load_problems():
     path = os.getenv("PROBLEMS_PATH", "problems.json")
     try:
@@ -44,6 +46,36 @@ def load_problems():
             return json.load(f)
     except FileNotFoundError:
         raise RuntimeError(f"Problems file not found at {path}")
+    
+# --- Adding new endpoints for rooms and websockets ---
+@app.post("/rooms", response_model=CreateRoomResponse)
+async def create_room():
+    room_id = await room_store.create_room()
+    return CreateRoomResponse(room_id=room_id)
+
+@app.post("/rooms/{room_id}/join", response_model=JoinRoomResponse)
+async def join_room(room_id: str, req: JoinRoomRequest):
+    player_id, ws_url = await room_store.join_room(room_id, req.name)
+    return JoinRoomResponse(room_id=room_id, player_id=player_id, ws_url=f"/ws/{room_id}?player_id={player_id}")
+
+@app.get("/rooms/{room_id}")
+async def get_room_state(room_id: str):
+    return await room_store.get_state(room_id)
+
+@app.websocket("/ws/{room_id}")
+async def ws_room(ws: WebSocket, room_id: str, player_id: str):
+    await ws.accept()
+    try:
+        await room_store.connect_ws(room_id, player_id, ws)
+        while True:
+            raw = await ws.receive_text()  # Keep the connection open
+            message = json.loads(raw)
+            resp = await room_store.handle_client_message(room_id, player_id, message)
+            if resp is not None:
+                await ws.send_json(resp)
+    except WebSocketDisconnect:
+        await room_store.disconnect_ws(room_id, player_id)
+
 
 
 
@@ -58,6 +90,17 @@ def get_problem(problem_id: str):
         if p.get("id") == problem_id:
             return p
     raise HTTPException(status_code=404, detail="Problem not found")
+
+class CreateRoomResponse(BaseModel):
+    room_id: str
+
+class JoinRoomRequest(BaseModel):
+    name: str
+
+class JoinRoomResponse(BaseModel):
+    room_id: str
+    player_id: str
+    ws_url: str
 
 class RaceRequest(BaseModel):
     problem_id: str

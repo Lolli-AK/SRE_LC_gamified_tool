@@ -137,9 +137,6 @@ class RoomStore:
             await self._broadcast(room, {"type": "start", "problem": problem})
         await self._broadcast(room, self._state_payload(room))
 
-
-
-
 # makes database migration - moving from one database to another - easier
 
 DATA_PATH = Path(__file__).parent / "data" / "problems.json"
