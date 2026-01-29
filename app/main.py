@@ -47,6 +47,17 @@ def load_problems():
     except FileNotFoundError:
         raise RuntimeError(f"Problems file not found at {path}")
     
+class CreateRoomResponse(BaseModel):
+    room_id: str
+
+class JoinRoomRequest(BaseModel):
+    name: str
+
+class JoinRoomResponse(BaseModel):
+    room_id: str
+    player_id: str
+    ws_url: str
+    
 # --- Adding new endpoints for rooms and websockets ---
 @app.post("/rooms", response_model=CreateRoomResponse)
 async def create_room():
@@ -90,17 +101,6 @@ def get_problem(problem_id: str):
         if p.get("id") == problem_id:
             return p
     raise HTTPException(status_code=404, detail="Problem not found")
-
-class CreateRoomResponse(BaseModel):
-    room_id: str
-
-class JoinRoomRequest(BaseModel):
-    name: str
-
-class JoinRoomResponse(BaseModel):
-    room_id: str
-    player_id: str
-    ws_url: str
 
 class RaceRequest(BaseModel):
     problem_id: str

@@ -1,7 +1,7 @@
+from __future__ import annotations
 import json, asyncio, time, uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from __future__ import annotations
 from fastapi import WebSocket
 from typing import Any, Dict, List, Optional, Callable
 
