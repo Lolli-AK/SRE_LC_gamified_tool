@@ -66,8 +66,9 @@ async def create_room():
 
 @app.post("/rooms/{room_id}/join", response_model=JoinRoomResponse)
 async def join_room(room_id: str, req: JoinRoomRequest):
-    player_id, ws_url = await room_store.join_room(room_id, req.name)
-    return JoinRoomResponse(room_id=room_id, player_id=player_id, ws_url=f"/ws/{room_id}?player_id={player_id}")
+    player_id = await room_store.join_room(room_id, req.name)
+    ws_url = f"/ws/{room_id}?player_id={player_id}"
+    return JoinRoomResponse(room_id=room_id, player_id=player_id, ws_url=ws_url)
 
 @app.get("/rooms/{room_id}")
 async def get_room_state(room_id: str):

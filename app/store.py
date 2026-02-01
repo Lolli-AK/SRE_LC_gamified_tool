@@ -69,7 +69,7 @@ class RoomStore:
             player.ws = ws
 
             # send state to player and announce
-            await self._ws_send(ws, self.__state__payload(room))
+            await self._ws_send(ws, self._state_payload(room))
             await self._broadcast(room, {
                 "type": "event",
                  "message": f"{player.name} connected",

@@ -19,3 +19,27 @@ PROBLEMS_PATH="$(pwd)/app/data/problems.json" uvicorn app.main:app --reload --po
 # find a function from project root:
 grep -R "def load_problems" -n .
 grep -R "run_python_in_docker" -n .
+
+get the room ID: curl -s -X POST http://localhost:8000/rooms
+
+curl -s -X POST http://localhost:8000/rooms/266aa74114014505832c371662403f62/join \
+  -H "Content-Type: application/json" \
+  -d '{"name":"P1"}'
+
+curl -s -X POST http://localhost:8000/rooms/266aa74114014505832c371662403f62/join \
+  -H "Content-Type: application/json" \
+  -d '{"name":"P2"}'
+
+**create room and join twice:**
+
+ROOM_ID=$(curl -s -X POST http://localhost:8000/rooms | python -c "import sys,json; print(json.load(sys.stdin)['room_id'])")
+P1=$(curl -s -X POST http://localhost:8000/rooms/$ROOM_ID/join -H "Content-Type: application/json" -d '{"name":"P1"}' | python -c "import sys,json; print(json.load(sys.stdin)['player_id'])")
+P2=$(curl -s -X POST http://localhost:8000/rooms/$ROOM_ID/join -H "Content-Type: application/json" -d '{"name":"P2"}' | python -c "import sys,json; print(json.load(sys.stdin)['player_id'])")
+echo "ROOM=$ROOM_ID"
+echo "P1=$P1"
+echo "P2=$P2"
+
+wscat -c "ws://localhost:8000/ws/$ROOM_ID?player_id=$P1"
+
+wscat -c "ws://localhost:8000/ws/$ROOM_ID?player_id=$P2"
+
