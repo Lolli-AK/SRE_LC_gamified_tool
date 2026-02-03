@@ -4,6 +4,30 @@ import type { ProblemListItem, ProblemDetail } from "../types/problem";
 
 type HealthResponse = { status: string };
 
+export type CreateRoomResponse = {
+  room_id: string;
+};
+
+export type JoinRoomRequest = {
+  name: string;
+};
+
+export type JoinRoomResponse = {
+  room_id: string;
+  player_id: string; 
+  ws_url: string;
+};
+
+export type RoomState = {
+  room_id: string;
+  status: string;
+  players: Array<{
+    player_id: string;
+    name: string;
+    connected: boolean;
+  }>;
+}
+
 export type RaceRequest = {
   problem_id: string;
   user_time_ms: number;
@@ -33,6 +57,22 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
 const BASE = import.meta.env.VITE_API_BASE;
 
 export const api = {
+
+  async createRoom(): Promise<CreateRoomResponse> {
+    return http<CreateRoomResponse>("/rooms", { method: "POST" });
+  },
+
+  async joinRoom(roomId: string, body: JoinRoomRequest): Promise<JoinRoomResponse> {
+    return http<JoinRoomResponse>(`/rooms/${roomId}/join`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+
+  async getRoomState(roomId: string): Promise<RoomState> {
+    return http<RoomState>(`/rooms/${roomId}`);
+  },
+  
   async getProblems(): Promise<ProblemListItem[]> {
     const res = await fetch(`${BASE}/problems`);
     if (!res.ok) throw new Error(await res.text());

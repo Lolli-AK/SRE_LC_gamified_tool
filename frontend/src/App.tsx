@@ -1,5 +1,6 @@
 import { Routes, Route, Link } from "react-router-dom";
 import Home from "./pages/Home";
+import Room from "./pages/Room";
 import Problems from "./pages/Problems";
 import ProblemDetail from "./pages/ProblemDetail";
 import Leaderboard from "./pages/Leaderboard";
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="/problems" element={<Problems />} />
           <Route path="/problems/:id" element={<ProblemDetail />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/room/:roomId" element={<Room />} />
         </Routes>
       </main>
     </div>

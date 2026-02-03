@@ -133,7 +133,7 @@ class RoomStore:
         if len(connected) == 2 and room.status in ("waiting", "ready"):
             room.status = "running"
             room.started_at = time.time()
-            problem = self._get_problem_payload()
+            problem = self.get_problem_payload()
             await self._broadcast(room, {"type": "start", "problem": problem})
         await self._broadcast(room, self._state_payload(room))
 

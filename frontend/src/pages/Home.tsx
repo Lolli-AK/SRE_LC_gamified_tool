@@ -1,9 +1,23 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
+import { useNavigate } from "react-router-dom";
 
 export default function Home() {
+  const navigate = useNavigate();
+  const [creating, setCreating] = useState(false);
   const [status, setStatus] = useState("checking...");
   const [error, setError] = useState<string | null>(null);
+
+  const handleCreateRace = async () => {
+    setCreating(true);
+    try{
+      const resp = await api.createRoom();
+      navigate(`/room/${resp.room_id}`);
+    } catch (error) {
+      alert(`Failed to create room: ${error}`);
+      setCreating(false);
+    }
+  };
 
   useEffect(() => {
     api.health()
@@ -16,6 +30,13 @@ export default function Home() {
       <h1 className="text-2xl font-bold">Race Lobby</h1>
 
       <div className="rounded-xl border bg-white p-4">
+        <button
+          onClick={handleCreateRace}
+          disabled={creating}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+        >
+          {creating ? "Creating..." : "Create a Race"}
+        </button>
         <div className="text-sm text-gray-600">API status</div>
         {error ? (
           <div className="mt-1 text-red-600">{error}</div>
@@ -26,6 +47,7 @@ export default function Home() {
 
       <div className="rounded-xl border bg-white p-4 text-gray-700">
         Pick a problem and race the baseline.
+        Click "Create a Race" to generate a room. Share the link with a friend to race together!
       </div>
     </div>
   );
