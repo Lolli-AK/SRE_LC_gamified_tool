@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, use } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../lib/api";
 import type { RoomState } from "../lib/api";
@@ -24,42 +24,51 @@ export default function Room() {
         localStorage.setItem(key, name);
     }, [roomId]);
 
+    const hasJoinedRef = useRef(false);
+
     // join room and create websocket
     useEffect(() => {
-        if (!roomId || !playerName || joined) return;
+        if (!roomId || !playerName || hasJoinedRef.current) return;
 
-        let ws: WebSocket | null = null;
-
-        ( async () => {
+        (async () => {
             try {
                 const joinRes = await api.joinRoom(roomId, { name: playerName });
+                hasJoinedRef.current = true;
                 setJoined(true);
 
-                ws = new WebSocket(joinRes.ws_url);
+                const wsBase = API_BASE
+                    .replace("http://", "ws://")
+                    .replace("https://", "wss://");
+                const wsUrl = `${wsBase}/ws/${roomId}?player_id=${joinRes.player_id}`;
+
+                const ws = new WebSocket(wsUrl);
                 wsRef.current = ws;
 
                 ws.onmessage = (event) => {
                     const data = JSON.parse(event.data);
-                    if (data.type === "room_state") {
-                        setRoomState(data.payload);
+                    // Backend sends {"type": "state", "room_id", "status", "players"}
+                    if (data.type === "state") {
+                        setRoomState(data);
                     }
                 };
 
                 ws.onclose = () => {
                     console.log("WebSocket disconnected");
+                    hasJoinedRef.current = false;
                     setJoined(false);
                 };
             } catch (error) {
                 console.error("Failed to join room:", error);
             }
-        } )();
+        })();
+
         return () => {
-            if (wsRef.current) wsRef.current.close();
-            wsRef.current = null;
-            setJoined(false);
+            if (wsRef.current) {
+                wsRef.current.close();
+                wsRef.current = null;
+            }
         };
-    
-    }, [roomId, playerName, joined]);
+    }, [roomId, playerName]);
 
     return (
         <div style={{ padding: 16 }}>

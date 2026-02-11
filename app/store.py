@@ -45,6 +45,7 @@ class RoomStore:
             if room is None:
                 raise ValueError("Room not found")
             if len(room.players) >= 2:
+                player_names = [p.name for p in room.players.values()]
                 raise ValueError("Room is full")
             player_id = _new_id()
             room.players[player_id] = Player(player_id=player_id, name=name)
@@ -56,7 +57,7 @@ class RoomStore:
             room = self.__rooms.get(room_id)
             if room is None:
                 raise KeyError("Room not found")
-            return self.__state__payload(room)
+            return self._state_payload(room)
     
     async def connect_ws(self, room_id: str, player_id: str, ws: WebSocket):
         async with self.__lock:

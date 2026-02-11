@@ -10,6 +10,7 @@ from app.judge import run_python_subprocess
 from app.store import RoomStore
 
 app = FastAPI()
+print("BOOTED MAIN APP FILE XYZ")
 
 app.add_middleware(
     CORSMiddleware,
@@ -66,13 +67,26 @@ async def create_room():
 
 @app.post("/rooms/{room_id}/join", response_model=JoinRoomResponse)
 async def join_room(room_id: str, req: JoinRoomRequest):
-    player_id = await room_store.join_room(room_id, req.name)
+    try:
+        player_id = await room_store.join_room(room_id, req.name)
+    except ValueError as e:
+        # Convert ValueError to proper HTTP error
+        if "Room not found" in str(e):
+            raise HTTPException(status_code=404, detail=str(e))
+        elif "Room is full" in str(e):
+            raise HTTPException(status_code=400, detail=str(e))
+        else:
+            raise HTTPException(status_code=400, detail=str(e))
+    
     ws_url = f"/ws/{room_id}?player_id={player_id}"
     return JoinRoomResponse(room_id=room_id, player_id=player_id, ws_url=ws_url)
 
 @app.get("/rooms/{room_id}")
 async def get_room_state(room_id: str):
-    return await room_store.get_state(room_id)
+    try:
+        return await room_store.get_state(room_id)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail="Room not found")
 
 @app.websocket("/ws/{room_id}")
 async def ws_room(ws: WebSocket, room_id: str, player_id: str):
@@ -82,9 +96,9 @@ async def ws_room(ws: WebSocket, room_id: str, player_id: str):
         while True:
             raw = await ws.receive_text()  # Keep the connection open
             message = json.loads(raw)
-            resp = await room_store.handle_client_message(room_id, player_id, message)
-            if resp is not None:
-                await ws.send_json(resp)
+            # resp = await room_store.handle_client_message(room_id, player_id, message)
+            # if resp is not None:
+            #     await ws.send_json(resp)
     except WebSocketDisconnect:
         await room_store.disconnect_ws(room_id, player_id)
 
