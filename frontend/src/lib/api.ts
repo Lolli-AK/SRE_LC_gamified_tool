@@ -26,6 +26,8 @@ export type RoomState = {
     name: string;
     connected: boolean;
   }>;
+  current_problem_id?: string | null;
+
 }
 
 export type RaceRequest = {
@@ -90,7 +92,7 @@ export const api = {
   },
 
   async getProblem(id: string): Promise<ProblemDetail> {
-    const res = await fetch(`${BASE}/problems/${id}`);
+    const res = await fetch(`${API_BASE}/problems/${id}`);
     if (!res.ok) throw new Error(await res.text());
     return res.json();
   },

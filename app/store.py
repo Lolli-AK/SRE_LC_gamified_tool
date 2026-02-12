@@ -21,6 +21,7 @@ class Room:
     players: Dict[str, Player] = field(default_factory=dict)
     status: str = "waiting" # waiting|ready|running|done
     created_at: float = field(default_factory=time.time)
+    current_problem_id: Optional[str] = None
 
 
 class RoomStore:
@@ -58,6 +59,16 @@ class RoomStore:
             if room is None:
                 raise KeyError("Room not found")
             return self._state_payload(room)
+
+    async def select_problem(self, room_id: str, player_id: str, problem_id: str) -> None:
+        """Set the room's current problem. Caller must validate problem_id exists."""
+        async with self.__lock:
+            room = self.__rooms.get(room_id)
+            if room is None:
+                raise ValueError("Room not found")
+            if player_id not in room.players:
+                raise ValueError("Player not in room")
+            room.current_problem_id = problem_id
     
     async def connect_ws(self, room_id: str, player_id: str, ws: WebSocket):
         async with self.__lock:
@@ -106,6 +117,7 @@ class RoomStore:
                 } 
                 for p in room.players.values()
             ],
+            "current_problem_id": room.current_problem_id,
         }
 
     async def _ws_send(self, ws: WebSocket, payload: dict):

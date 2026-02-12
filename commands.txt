@@ -43,3 +43,18 @@ wscat -c "ws://localhost:8000/ws/$ROOM_ID?player_id=$P1"
 
 wscat -c "ws://localhost:8000/ws/$ROOM_ID?player_id=$P2"
 
+# create room and get room id
+ROOM_ID=$(curl -s -X POST http://localhost:8000/rooms | python3 -c "import sys,json; print(json.load(sys.stdin)['room_id'])")
+echo "ROOM_ID=$ROOM_ID"
+
+# Join as first player, get player_id
+P1=$(curl -s -X POST "http://localhost:8000/rooms/$ROOM_ID/join" -H "Content-Type: application/json" -d '{"name":"Alice"}' | python3 -c "import sys,json; print(json.load(sys.stdin)['player_id'])")
+echo "P1=$P1"
+
+# Set the room's problem (use a real problem id from your /problems list)
+curl -s -X POST "http://localhost:8000/rooms/$ROOM_ID/problem" -H "Content-Type: application/json" -d "{\"player_id\":\"$P1\",\"problem_id\":\"two-sum\"}"
+
+# Testing if both tabs get the same state message
+curl -X POST http://localhost:8000/rooms/d7dca41b3d5147b3ae55cd0460cbe27c/two-sum \
+  -H "Content-Type: application/json" \
+  -d '{"problem_id":"two-sum"}'

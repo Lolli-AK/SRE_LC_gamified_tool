@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import type { ProblemDetail } from "../types/problem";
 import { useParams } from "react-router-dom";
 import { api } from "../lib/api";
 import type { RoomState } from "../lib/api";
@@ -10,6 +11,7 @@ export default function Room() {
     const [roomState, setRoomState] = useState<RoomState | null>(null);
     const [playerName, setPlayerName] = useState<string>("");
     const [joined, setJoined] = useState<boolean>(false);
+    const [problem, setProblem] = useState<ProblemDetail | null>(null);
     const wsRef = useRef<WebSocket | null>(null);
 
     // get player name from local storage or prompt
@@ -70,11 +72,37 @@ export default function Room() {
         };
     }, [roomId, playerName]);
 
+    useEffect(() => {
+        const id = roomState?.current_problem_id;
+      
+        if (!id) {
+          setProblem(null);
+          return;
+        }
+      
+        api.getProblem(id)
+          .then(setProblem)
+          .catch(() => setProblem(null));
+      }, [roomState?.current_problem_id]);
+
     return (
         <div style={{ padding: 16 }}>
         <h1>Room: {roomId}</h1>
         <div>Player: {playerName}</div>
-  
+
+        {problem && (
+        <div className="rounded-xl border p-4 mb-4">
+            <div className="text-lg font-semibold">
+            {problem.title}
+            {problem.difficulty ? ` — ${problem.difficulty}` : ""}
+            </div>
+
+            <div className="mt-3 whitespace-pre-wrap">
+            {problem.statement}
+            </div>
+        </div>
+        )}
+
         <pre style={{ marginTop: 12 }}>
           {roomState ? JSON.stringify(roomState, null, 2) : "Waiting for room state..."}
         </pre>

@@ -17,6 +17,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        "http://localhost:5174"
     ],
     allow_credentials=False,  # keep false unless you use cookies/auth
     allow_methods=["*"],
@@ -58,7 +59,13 @@ class JoinRoomResponse(BaseModel):
     room_id: str
     player_id: str
     ws_url: str
-    
+
+
+class SelectProblemRequest(BaseModel):
+    player_id: str
+    problem_id: str
+
+
 # --- Adding new endpoints for rooms and websockets ---
 @app.post("/rooms", response_model=CreateRoomResponse)
 async def create_room():
@@ -87,6 +94,25 @@ async def get_room_state(room_id: str):
         return await room_store.get_state(room_id)
     except KeyError as e:
         raise HTTPException(status_code=404, detail="Room not found")
+
+
+@app.post("/rooms/{room_id}/problem")
+async def select_problem(room_id: str, req: SelectProblemRequest):
+    """Set the room's current problem. Validates problem exists; returns updated room state."""
+    problems = load_problems()
+    if not any(p.get("id") == req.problem_id for p in problems):
+        raise HTTPException(status_code=404, detail="Problem not found")
+    try:
+        await room_store.select_problem(room_id, req.player_id, req.problem_id)
+    except ValueError as e:
+        msg = str(e)
+        if "Room not found" in msg:
+            raise HTTPException(status_code=404, detail=msg)
+        if "Player not in room" in msg:
+            raise HTTPException(status_code=400, detail=msg)
+        raise HTTPException(status_code=400, detail=msg)
+    return await room_store.get_state(room_id)
+
 
 @app.websocket("/ws/{room_id}")
 async def ws_room(ws: WebSocket, room_id: str, player_id: str):
