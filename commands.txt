@@ -61,5 +61,4 @@ curl -X POST http://localhost:8000/rooms/a6a46592a1714e559bad073e97d45293/two-su
 
 
 Questions:
-do i need both base and api_base in api.ts?
 can i have a separate component to render the problem on the frontend so it can be the same for a room with multiple people and a single person?

@@ -56,8 +56,6 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json();
 }
 
-const BASE = import.meta.env.VITE_API_BASE;
-
 export const api = {
 
   async createRoom(): Promise<CreateRoomResponse> {
@@ -76,7 +74,7 @@ export const api = {
   },
   
   async getProblems(): Promise<ProblemListItem[]> {
-    const res = await fetch(`${BASE}/problems`);
+    const res = await fetch(`${API_BASE}/problems`);
     if (!res.ok) throw new Error(await res.text());
     return res.json();
   },
@@ -98,7 +96,7 @@ export const api = {
   },
 
   async execute(body: { problem_id: string; code: string; language: "python" }) {
-    const res = await fetch(`${BASE}/execute`, {
+    const res = await fetch(`${API_BASE}/execute`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
