@@ -69,6 +69,9 @@ class RoomStore:
             if player_id not in room.players:
                 raise ValueError("Player not in room")
             room.current_problem_id = problem_id
+
+            # push the update to everyone (frontend)
+            await self._broadcast(room, self._state_payload(room))
     
     async def connect_ws(self, room_id: str, player_id: str, ws: WebSocket):
         async with self.__lock:

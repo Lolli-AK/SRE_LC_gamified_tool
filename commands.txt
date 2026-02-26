@@ -59,6 +59,22 @@ curl -X POST http://localhost:8000/rooms/a6a46592a1714e559bad073e97d45293/two-su
   -H "Content-Type: application/json" \
   -d '{"problem_id":"two-sum"}'
 
+**Testing room rendering**
+in a tab open dev tools console and run:
+
+// Get room_id from the URL (e.g. from /room/abc123)
+const roomId = window.location.pathname.split('/')[2];
+// You need a player_id: check the room state JSON on the page and copy one player_id from the "players" array
+// Then run (replace YOUR_PLAYER_ID with that value):
+fetch(`http://localhost:8000/rooms/${roomId}/problem`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ player_id: 'YOUR_PLAYER_ID', problem_id: 'two-sum' })
+}).then(r => r.json()).then(console.log);
+
 
 Questions:
 can i have a separate component to render the problem on the frontend so it can be the same for a room with multiple people and a single person?
+yes but later
+
+current problem id is updated in the console just not on frontend
