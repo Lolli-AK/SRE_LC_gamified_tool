@@ -103,7 +103,7 @@ class RoomStore:
             if player_id in room.players:
                 room.players[player_id].ws = None
                 await self._broadcast(room, {"type": "opponent_left", "player_id": player_id})
-                await self._maybe_update_status(room)
+                await self.maybe_update_status(room)
                 await self._broadcast(room, self._state_payload(room))
 
     # ----Internals----
@@ -150,7 +150,8 @@ class RoomStore:
             room.status = "running"
             room.started_at = time.time()
             problem = self.get_problem_payload()
-            await self._broadcast(room, {"type": "start", "problem": problem})
+            room.current_problem_id = problem["id"]
+            await self._broadcast(room, {"type": "start", "message": "Match started!"})
         await self._broadcast(room, self._state_payload(room))
 
 # makes database migration - moving from one database to another - easier

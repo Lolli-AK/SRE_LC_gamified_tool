@@ -17,7 +17,7 @@ type ExecuteResponse = {
   total_runtime_ms: number;
 };
 
-export default function ProblemDetail() {
+export default function ProblemDetail({ problemId }: { problemId?: string }) {
   const { id } = useParams();
   const [problem, setProblem] = useState<ProblemDetail | null>(null);
   const [code, setCode] = useState<string>("");

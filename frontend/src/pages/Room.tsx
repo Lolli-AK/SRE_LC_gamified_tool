@@ -3,6 +3,7 @@ import type { ProblemDetail } from "../types/problem";
 import { useParams } from "react-router-dom";
 import { api } from "../lib/api";
 import type { RoomState } from "../lib/api";
+import ProblemDetail from "./ProblemDetail";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8000";
 

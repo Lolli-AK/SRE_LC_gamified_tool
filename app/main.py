@@ -10,7 +10,6 @@ from app.judge import run_python_subprocess
 from app.store import RoomStore
 
 app = FastAPI()
-print("BOOTED MAIN APP FILE XYZ")
 
 app.add_middleware(
     CORSMiddleware,
