@@ -18,7 +18,8 @@ type ExecuteResponse = {
 };
 
 export default function ProblemDetail({ problemId }: { problemId?: string }) {
-  const { id } = useParams();
+  const params = useParams();
+  const id = problemId ?? params.id;
   const [problem, setProblem] = useState<ProblemDetail | null>(null);
   const [code, setCode] = useState<string>("");
   const [running, setRunning] = useState(false);
