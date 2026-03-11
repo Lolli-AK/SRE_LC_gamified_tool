@@ -89,14 +89,33 @@ export default function ProblemDetail({ problemId }: { problemId?: string }) {
             Total: <b>{runResult.total_runtime_ms} ms</b>
           </div>
           {runResult.tests.map((t) => (
-            <div key={t.index} className="border rounded p-2 text-sm">
-              Test {t.index + 1}:{" "}
-              <b className={t.passed ? "text-green-700" : "text-red-700"}>
-                {t.passed ? "PASS" : "FAIL"}
-              </b>{" "}
-              ({t.runtime_ms} ms)
-            </div>
-          ))}
+  <div key={t.index} className="border rounded p-2 text-sm space-y-1">
+    <div>
+      Test {t.index + 1}:{" "}
+      <b className={t.passed ? "text-green-700" : "text-red-700"}>
+        {t.passed ? "PASS" : "FAIL"}
+      </b>{" "}
+      ({t.runtime_ms} ms)
+    </div>
+
+    {!t.passed && (
+      <div className="mt-2 space-y-1 text-xs">
+        {/* only show the error expected when the code passed */}
+        {t.error && (
+          <div>
+            <span className="font-semibold text-red-700">Error:</span> {t.error}
+          </div>
+        )}
+        <div>
+          <span className="font-semibold">Expected:</span> {t.expected_json}
+        </div>
+        <div>
+          <span className="font-semibold">Actual:</span> {t.actual_json}
+        </div>
+      </div>
+    )}
+  </div>
+))}
         </div>
       )}
     </div>
