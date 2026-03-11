@@ -46,7 +46,7 @@ export default function Home() {
       </div>
 
       <div className="rounded-xl border bg-white p-4 text-gray-700">
-        Pick a problem and race the baseline.
+        Pick a problem to solve.
         Click "Create a Race" to generate a room. Share the link with a friend to race together!
       </div>
     </div>

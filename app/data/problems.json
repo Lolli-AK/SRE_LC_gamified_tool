@@ -20,8 +20,14 @@
       "tags": ["stack"],
       "baseline_ms": 60000,
       "statement": "Given a string s containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid.",
-      "canonical_solution_language": "python",
-      "canonical_solution_code": "def isValid(s):\n    stack = []\n    pairs = {')':'(', ']':'[', '}':'{'}\n    for c in s:\n        if c in pairs:\n            if not stack or stack.pop() != pairs[c]:\n                return False\n        else:\n            stack.append(c)\n    return not stack\n",
-      "time_complexity": "O(n)"
+      "function_signature": "def solution(s):",
+      "starter_code": "def solution(s):\n    # TODO\n    pass\n",
+      "samples": [
+        { "args_json": "[\"()\"]", "expected_json": "true" },
+        { "args_json": "[\"()[]{}\"]", "expected_json": "true" },
+        { "args_json": "[(\"]", "expected_json": "false" },
+        { "args_json": "[\"([)]\"]", "expected_json": "false" },
+        { "args_json": "[\"{[]}\"]", "expected_json": "true" }
+      ]
     }
 ]

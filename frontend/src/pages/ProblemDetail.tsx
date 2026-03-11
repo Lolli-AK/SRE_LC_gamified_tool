@@ -27,7 +27,7 @@ export default function ProblemDetail({ problemId }: { problemId?: string }) {
   const [runError, setRunError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!id) return; // ✅ key fix
+    if (!id) return;
     (async () => {
       const p = await api.getProblem(id);
       setProblem(p);
