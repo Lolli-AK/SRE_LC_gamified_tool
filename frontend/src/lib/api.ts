@@ -105,6 +105,13 @@ export const api = {
     return res.json();
   },
 
+  async selectProblem(roomId: string, playerId: string, problemId: string): Promise<RoomState> {
+    return http<RoomState>(`/rooms/${roomId}/problem`, {
+      method: "POST",
+      body: JSON.stringify({ player_id: playerId, problem_id: problemId }),
+    });
+  },
+
   async health(): Promise<HealthResponse> {
     const res = await fetch(`${import.meta.env.VITE_API_BASE}/health`);
     if (!res.ok) throw new Error(await res.text());

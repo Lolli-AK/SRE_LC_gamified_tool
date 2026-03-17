@@ -25,7 +25,7 @@
       "samples": [
         { "args_json": "[\"()\"]", "expected_json": "true" },
         { "args_json": "[\"()[]{}\"]", "expected_json": "true" },
-        { "args_json": "[(\"]", "expected_json": "false" },
+        { "args_json": "[\"(\"]", "expected_json": "false" },
         { "args_json": "[\"([)]\"]", "expected_json": "false" },
         { "args_json": "[\"{[]}\"]", "expected_json": "true" }
       ]

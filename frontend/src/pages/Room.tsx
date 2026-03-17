@@ -1,7 +1,8 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, use } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "../lib/api";
 import type { RoomState } from "../lib/api";
+import type { ProblemListItem } from "../types/problem";
 import ProblemDetail from "./ProblemDetail";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:8000";
@@ -11,7 +12,13 @@ export default function Room() {
     const [roomState, setRoomState] = useState<RoomState | null>(null);
     const [playerName, setPlayerName] = useState<string>("");
     const [joined, setJoined] = useState<boolean>(false);
+    const [problems, setProblems] = useState<ProblemListItem[]>([]);
+    const [selectingProblem, setSelectingProblem] = useState(false);
     const wsRef = useRef<WebSocket | null>(null);
+    const playerIdRef = useRef<string | null>(null);
+
+    // determine if this player is the room creator
+    const isCreator = roomId ? localStorage.getItem(`isCreator_${roomId}`) === "true" : false;
 
     // get player name from local storage or prompt
     useEffect(() => {
@@ -25,6 +32,12 @@ export default function Room() {
         localStorage.setItem(key, name);
     }, [roomId]);
 
+    // load problem list for creator
+    useEffect(() => {
+        if (!isCreator) return;
+        api.getProblems().then(setProblems).catch(console.error);
+    }, [isCreator]);
+
     const hasJoinedRef = useRef(false);
 
     // join room and create websocket
@@ -35,6 +48,7 @@ export default function Room() {
             try {
                 const joinRes = await api.joinRoom(roomId, { name: playerName });
                 hasJoinedRef.current = true;
+                playerIdRef.current = joinRes.player_id;
                 setJoined(true);
 
                 const wsBase = API_BASE
@@ -71,12 +85,58 @@ export default function Room() {
         };
     }, [roomId, playerName]);
 
-    console.log("Room state:", roomState);
+    async function handleSelectProblem(problemId: string) {
+        if (!roomId || !playerIdRef.current) return;
+        setSelectingProblem(true);
+        try {
+            await api.selectProblem(roomId, playerIdRef.current, problemId );
+        } catch (error) {
+            alert(`Failed to select problem: ${error}`);
+        } finally {
+            setSelectingProblem(false);
+        }
+    }
+
+    // show picker if creator joined and no problem selected (oppponent waiting)
+    const showPicker = isCreator && joined && !roomState?.current_problem_id && roomState?.status == "waiting";
+
+
 
     return (
         <div style={{ padding: 16 }}>
         <h1>Room: {roomId}</h1>
         <div>Player: {playerName}</div>
+
+        {/* Waiting message for the joiner */}
+        {roomState?.status === "waiting" && !isCreator && (
+                <p className="text-gray-500 mt-2">Waiting for the room creator to pick a problem…</p>
+        )}
+
+        {/* Problem picker for the creator */}
+        {showPicker && (
+                <div className="mt-4 space-y-2">
+                    <p className="font-semibold">Pick a problem to race on:</p>
+                    {problems.map((p) => (
+                        <button
+                            key={p.id}
+                            disabled={selectingProblem}
+                            onClick={() => handleSelectProblem(p.id)}
+                            className="w-full text-left border rounded p-3 hover:bg-gray-50 disabled:opacity-50 flex justify-between items-center"
+                        >
+                            <span className="font-medium">{p.title}</span>
+                        </button>
+                    ))}
+                </div>
+            )}
+ 
+            {/* Creator has picked but opponent hasn't joined yet */}
+            {isCreator && roomState?.current_problem_id && roomState?.status === "waiting" && (
+                <p className="text-gray-500 mt-2">
+                    Problem selected! Waiting for your teammate to join…
+                </p>
+            )}
+
+        {/* Show problem details once a problem is selected */}
         {roomState?.current_problem_id && (
             
         <ProblemDetail problemId={roomState.current_problem_id} />

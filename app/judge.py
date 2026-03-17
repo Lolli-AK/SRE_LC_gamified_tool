@@ -11,18 +11,21 @@ def run_python_subprocess(user_code: str, tests: List[dict], timeout_s: int = 3)
     Returns a dict matching ExecuteResponse.
     """
     harness = f"""
-import json, time, traceback
+import json, time, traceback, io
+from contextlib import redirect_stdout
 
 {user_code}
 
 tests = json.loads({json.dumps(json.dumps(tests))})
+stdout_buffer = io.StringIO()
 out_tests = []
 total_start = time.perf_counter()
 
 for i, t in enumerate(tests):
     start = time.perf_counter()
     try:
-        actual = solution(*t["args"])
+        with redirect_stdout(stdout_buffer):
+            actual = solution(*t["args"])
         passed = actual == t["expected"]
         err = None
     except Exception as e:
@@ -43,7 +46,8 @@ total_runtime_ms = int((time.perf_counter() - total_start) * 1000)
 
 print(json.dumps({{
     "tests": out_tests,
-    "total_runtime_ms": total_runtime_ms
+    "total_runtime_ms": total_runtime_ms,
+    "stdout": stdout_buffer.getvalue()
 }}))
 """
     with tempfile.TemporaryDirectory() as d:

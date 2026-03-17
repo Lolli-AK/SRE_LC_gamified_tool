@@ -14,6 +14,7 @@ type ExecuteResponse = {
     runtime_ms: number;
     error?: string;
   }>;
+  stdout?: string;
   total_runtime_ms: number;
 };
 
@@ -97,6 +98,13 @@ export default function ProblemDetail({ problemId }: { problemId?: string }) {
       </b>{" "}
       ({t.runtime_ms} ms)
     </div>
+
+    {runResult.stdout && (
+      <div className="border rounded p-2 text-sm bg-gray-50">
+        <div className="font-semibold mb-1">Console Output</div>
+        <pre className="whitespace-pre-wrap">{runResult.stdout}</pre>
+      </div>
+    )}
 
     {!t.passed && (
       <div className="mt-2 space-y-1 text-xs">
