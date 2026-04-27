@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from typing import Literal
 from app.models_execute import ExecuteRequest, ExecuteResponse
 from app.judge import run_python_subprocess
-from app.store import RoomStore
+from app.store import RoomStore, get_problem as store_get_problem
 
 app = FastAPI()
 
@@ -40,6 +40,12 @@ def get_problem_payload(problem_id: str | None = None) -> dict:
     return p
 
 room_store = RoomStore(get_problem_payload=get_problem_payload)
+
+async def get_room_or_404(room_id: str) -> dict:
+    try:
+        return await room_store.get_state(room_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Room not found")
 
 def load_problems():
     path = os.getenv("PROBLEMS_PATH", "problems.json")
@@ -90,28 +96,21 @@ async def join_room(room_id: str, req: JoinRoomRequest):
 
 @app.get("/rooms/{room_id}")
 async def get_room_state(room_id: str):
-    try:
-        return await room_store.get_state(room_id)
-    except KeyError as e:
-        raise HTTPException(status_code=404, detail="Room not found")
+    return await get_room_or_404(room_id)
 
 
 @app.post("/rooms/{room_id}/problem")
 async def select_problem(room_id: str, req: SelectProblemRequest):
     """Set the room's current problem. Validates problem exists; returns updated room state."""
-    problems = load_problems()
-    if not any(p.get("id") == req.problem_id for p in problems):
+    if store_get_problem(req.problem_id) is None:
         raise HTTPException(status_code=404, detail="Problem not found")
     try:
         await room_store.select_problem(room_id, req.player_id, req.problem_id)
     except ValueError as e:
         msg = str(e)
-        if "Room not found" in msg:
-            raise HTTPException(status_code=404, detail=msg)
-        if "Player not in room" in msg:
-            raise HTTPException(status_code=400, detail=msg)
-        raise HTTPException(status_code=400, detail=msg)
-    return await room_store.get_state(room_id)
+        code = 403 if "creator" in msg else 404 if "not found" in msg.lower() else 400
+        raise HTTPException(status_code=code, detail=msg)
+    return await get_room_or_404(room_id)
 
 
 @app.websocket("/ws/{room_id}")
@@ -120,11 +119,7 @@ async def ws_room(ws: WebSocket, room_id: str, player_id: str):
     try:
         await room_store.connect_ws(room_id, player_id, ws)
         while True:
-            raw = await ws.receive_text()  # Keep the connection open
-            message = json.loads(raw)
-            # resp = await room_store.handle_client_message(room_id, player_id, message)
-            # if resp is not None:
-            #     await ws.send_json(resp)
+            await ws.receive_text()  # keep connection alive
     except WebSocketDisconnect:
         await room_store.disconnect_ws(room_id, player_id)
 
@@ -157,27 +152,14 @@ class RaceResponse(BaseModel):
 
 @app.post("/race", response_model=RaceResponse)
 def race(req: RaceRequest):
-    problems = load_problems()
-    for p in problems:
-        if p["id"] == req.problem_id:
-            baseline = p["baseline_ms"]
-            delta = req.user_time_ms - baseline
-
-            if delta < 0:
-                result = "win"
-            elif delta == 0:
-                result = "draw"
-            else:
-                result = "loss"
-
-            return {
-                "result": result,
-                "problem_id": req.problem_id,
-                "baseline_ms": baseline,
-                "delta_ms": delta,
-            }
-
-    raise HTTPException(status_code=404, detail="Problem not found")
+    # load_problems() reads PROBLEMS_PATH so tests can override the fixture
+    p = next((p for p in load_problems() if p["id"] == req.problem_id), None)
+    if p is None:
+        raise HTTPException(status_code=404, detail="Problem not found")
+    baseline = p["baseline_ms"]
+    delta = req.user_time_ms - baseline
+    result = "win" if delta < 0 else "draw" if delta == 0 else "loss"
+    return {"result": result, "problem_id": req.problem_id, "baseline_ms": baseline, "delta_ms": delta}
 
 @app.post("/execute", response_model=ExecuteResponse)
 def execute(req: ExecuteRequest):
@@ -187,8 +169,8 @@ def execute(req: ExecuteRequest):
     if "def solution" not in req.code:
         raise HTTPException(status_code=400, detail="Code must define def solution(...):")
 
-    problem = get_problem(req.problem_id)
-    if not problem:
+    problem = store_get_problem(req.problem_id)
+    if problem is None:
         raise HTTPException(status_code=404, detail="Problem not found")
     samples = problem.get("samples", [])
     if not samples:
@@ -212,10 +194,4 @@ def execute(req: ExecuteRequest):
         raise HTTPException(status_code=400, detail=result)
 
     return result
-
-'''	•	POST /rooms
-	•	POST /rooms/{room_id}/join
-	•	GET /rooms/{room_id}
-	•	WS /ws/{room_id}
-'''
 

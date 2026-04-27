@@ -17,8 +17,8 @@ export default function Room() {
     const wsRef = useRef<WebSocket | null>(null);
     const playerIdRef = useRef<string | null>(null);
 
-    // determine if this player is the room creator
-    const isCreator = roomId ? localStorage.getItem(`isCreator_${roomId}`) === "true" : false;
+    // derive creator status from server state — not localStorage
+    const isCreator = !!roomState && !!playerIdRef.current && roomState.creator_id === playerIdRef.current;
 
     // get player name from local storage or prompt
     useEffect(() => {
@@ -26,13 +26,13 @@ export default function Room() {
 
         const key = `playerName_${roomId}`;
         const saved = localStorage.getItem(key);
-    
+
         const name = saved ?? (prompt("Enter your name") || "Anonymous");
         setPlayerName(name);
         localStorage.setItem(key, name);
     }, [roomId]);
 
-    // load problem list for creator
+    // load problem list once we know this player is the creator
     useEffect(() => {
         if (!isCreator) return;
         api.getProblems().then(setProblems).catch(console.error);
@@ -60,11 +60,18 @@ export default function Room() {
                 wsRef.current = ws;
 
                 ws.onmessage = (event) => {
-                    const data = JSON.parse(event.data);
-                    // Backend sends {"type": "state", "room_id", "status", "players"}
-                    if (data.type === "state") {
-                        setRoomState(data);
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.type === "state") {
+                            setRoomState(data);
+                        }
+                    } catch {
+                        console.error("Received non-JSON WebSocket message:", event.data);
                     }
+                };
+
+                ws.onerror = (err) => {
+                    console.error("WebSocket error:", err);
                 };
 
                 ws.onclose = () => {
@@ -89,7 +96,7 @@ export default function Room() {
         if (!roomId || !playerIdRef.current) return;
         setSelectingProblem(true);
         try {
-            await api.selectProblem(roomId, playerIdRef.current, problemId );
+            await api.selectProblem(roomId, playerIdRef.current, problemId);
         } catch (error) {
             alert(`Failed to select problem: ${error}`);
         } finally {
@@ -97,10 +104,8 @@ export default function Room() {
         }
     }
 
-    // show picker if creator joined and no problem selected (oppponent waiting)
-    const showPicker = isCreator && joined && !roomState?.current_problem_id && roomState?.status == "waiting";
-
-
+    // show picker if creator joined and no problem selected
+    const showPicker = isCreator && joined && !roomState?.current_problem_id && roomState?.status === "waiting";
 
     return (
         <div style={{ padding: 16 }}>
@@ -124,11 +129,12 @@ export default function Room() {
                             className="w-full text-left border rounded p-3 hover:bg-gray-50 disabled:opacity-50 flex justify-between items-center"
                         >
                             <span className="font-medium">{p.title}</span>
+                            <span className="text-sm text-gray-400">{p.difficulty}</span>
                         </button>
                     ))}
                 </div>
             )}
- 
+
             {/* Creator has picked but opponent hasn't joined yet */}
             {isCreator && roomState?.current_problem_id && roomState?.status === "waiting" && (
                 <p className="text-gray-500 mt-2">
@@ -138,7 +144,6 @@ export default function Room() {
 
         {/* Show problem details once a problem is selected */}
         {roomState?.current_problem_id && (
-            
         <ProblemDetail problemId={roomState.current_problem_id} />
         )}
       </div>

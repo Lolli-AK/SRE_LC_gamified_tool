@@ -65,8 +65,6 @@ print(json.dumps({{
             return {"error" : f"timed out after {timeout_s}s"}
         
         if p.returncode != 0:
-            print("this code is running before the error hits")
-            # error the code the user has written
             msg = (p.stderr or p.stdout).strip()[:2000]  # cap length
             return {"error": msg or f"subprocess exited with code {p.returncode}", "stderr": p.stderr}
         try:

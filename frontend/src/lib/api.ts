@@ -14,7 +14,7 @@ export type JoinRoomRequest = {
 
 export type JoinRoomResponse = {
   room_id: string;
-  player_id: string; 
+  player_id: string;
   ws_url: string;
 };
 
@@ -27,8 +27,8 @@ export type RoomState = {
     connected: boolean;
   }>;
   current_problem_id?: string | null;
-
-}
+  creator_id?: string | null;
+};
 
 export type RaceRequest = {
   problem_id: string;
@@ -72,37 +72,21 @@ export const api = {
   async getRoomState(roomId: string): Promise<RoomState> {
     return http<RoomState>(`/rooms/${roomId}`);
   },
-  
+
   async getProblems(): Promise<ProblemListItem[]> {
-    const res = await fetch(`${API_BASE}/problems`);
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+    return http<ProblemListItem[]>("/problems");
   },
 
   async race(body: RaceRequest): Promise<RaceResponse> {
-    const res = await fetch(`${import.meta.env.VITE_API_BASE}/race`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+    return http<RaceResponse>("/race", { method: "POST", body: JSON.stringify(body) });
   },
 
   async getProblem(id: string): Promise<ProblemDetail> {
-    const res = await fetch(`${API_BASE}/problems/${id}`);
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+    return http<ProblemDetail>(`/problems/${id}`);
   },
 
   async execute(body: { problem_id: string; code: string; language: "python" }) {
-    const res = await fetch(`${API_BASE}/execute`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+    return http<unknown>("/execute", { method: "POST", body: JSON.stringify(body) });
   },
 
   async selectProblem(roomId: string, playerId: string, problemId: string): Promise<RoomState> {
@@ -113,8 +97,6 @@ export const api = {
   },
 
   async health(): Promise<HealthResponse> {
-    const res = await fetch(`${import.meta.env.VITE_API_BASE}/health`);
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+    return http<HealthResponse>("/health");
   },
 };

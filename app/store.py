@@ -22,6 +22,7 @@ class Room:
     status: str = "waiting" # waiting|ready|running|done
     created_at: float = field(default_factory=time.time)
     current_problem_id: Optional[str] = None
+    creator_id: Optional[str] = None
 
 
 class RoomStore:
@@ -50,6 +51,8 @@ class RoomStore:
                 raise ValueError("Room is full")
             player_id = _new_id()
             room.players[player_id] = Player(player_id=player_id, name=name)
+            if room.creator_id is None:
+                room.creator_id = player_id
             await self.maybe_update_status(room)
             return player_id
     
@@ -68,6 +71,8 @@ class RoomStore:
                 raise ValueError("Room not found")
             if player_id not in room.players:
                 raise ValueError("Player not in room")
+            if player_id != room.creator_id:
+                raise ValueError("Only the room creator can select the problem")
             room.current_problem_id = problem_id
 
             # push the update to everyone (frontend)
@@ -100,11 +105,9 @@ class RoomStore:
             if player is None:
                 return
             player.ws = None
-            if player_id in room.players:
-                room.players[player_id].ws = None
-                await self._broadcast(room, {"type": "opponent_left", "player_id": player_id})
-                await self.maybe_update_status(room)
-                await self._broadcast(room, self._state_payload(room))
+            await self._broadcast(room, {"type": "opponent_left", "player_id": player_id})
+            await self.maybe_update_status(room)
+            await self._broadcast(room, self._state_payload(room))
 
     # ----Internals----
     def _state_payload(self, room: Room) -> dict:
@@ -121,6 +124,7 @@ class RoomStore:
                 for p in room.players.values()
             ],
             "current_problem_id": room.current_problem_id,
+            "creator_id": room.creator_id,
         }
 
     async def _ws_send(self, ws: WebSocket, payload: dict):
@@ -149,8 +153,9 @@ class RoomStore:
         if len(connected) == 2 and room.status in ("waiting", "ready"):
             room.status = "running"
             room.started_at = time.time()
-            problem = self.get_problem_payload()
-            room.current_problem_id = problem["id"]
+            if not room.current_problem_id:
+                problem = self.get_problem_payload()
+                room.current_problem_id = problem["id"]
             await self._broadcast(room, {"type": "start", "message": "Match started!"})
         await self._broadcast(room, self._state_payload(room))
 

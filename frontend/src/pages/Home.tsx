@@ -12,7 +12,6 @@ export default function Home() {
     setCreating(true);
     try{
       const resp = await api.createRoom();
-      localStorage.setItem(`isCreator_${resp.room_id}`, "true");
       navigate(`/room/${resp.room_id}`);
     } catch (error) {
       alert(`Failed to create room: ${error}`);
