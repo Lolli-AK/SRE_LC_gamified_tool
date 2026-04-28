@@ -17,7 +17,8 @@ app.add_middleware(
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:5174",
-        "https://sre-lc-gamified-tool.vercel.app"
+        "https://sre-lc-gamified-tool.vercel.app",
+        "https://sre-lc-gamified-tool.fly.dev"
     ],
     allow_credentials=False,  # keep false unless you use cookies/auth
     allow_methods=["*"],

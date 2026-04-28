@@ -86,7 +86,18 @@ export const api = {
   },
 
   async execute(body: { problem_id: string; code: string; language: "python" }) {
-    return http<unknown>("/execute", { method: "POST", body: JSON.stringify(body) });
+    return http<{
+      tests: Array<{
+        index: number;
+        passed: boolean;
+        actual_json: string;
+        expected_json: string;
+        runtime_ms: number;
+        error?: string;
+      }>;
+      stdout?: string;
+      total_runtime_ms: number;
+    }>("/execute", { method: "POST", body: JSON.stringify(body) });
   },
 
   async selectProblem(roomId: string, playerId: string, problemId: string): Promise<RoomState> {
