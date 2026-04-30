@@ -20,7 +20,7 @@ app.add_middleware(
         "https://sre-lc-gamified-tool.vercel.app",
         "https://sre-lc-gamified-tool.fly.dev"
     ],
-    allow_origin_regex=r"https://sre-lc-gamified-tool*\.vercel\.app",
+    allow_origin_regex=r"https://sre-lc-gamified-tool.*\.vercel\.app",
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
