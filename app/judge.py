@@ -17,14 +17,14 @@ from contextlib import redirect_stdout
 {user_code}
 
 tests = json.loads({json.dumps(json.dumps(tests))})
-stdout_buffer = io.StringIO()
 out_tests = []
 total_start = time.perf_counter()
 
 for i, t in enumerate(tests):
+    buf = io.StringIO()
     start = time.perf_counter()
     try:
-        with redirect_stdout(stdout_buffer):
+        with redirect_stdout(buf):
             actual = solution(*t["args"])
         passed = actual == t["expected"]
         err = None
@@ -32,7 +32,7 @@ for i, t in enumerate(tests):
         actual = None
         passed = False
         err = traceback.format_exc()
-        
+
     runtime_ms = int((time.perf_counter() - start) * 1000)
     out_tests.append({{
         "index": i,
@@ -40,14 +40,14 @@ for i, t in enumerate(tests):
         "actual_json": json.dumps(actual),
         "expected_json": json.dumps(t["expected"]),
         "runtime_ms": runtime_ms,
-        "error": err
+        "error": err,
+        "stdout": buf.getvalue()
     }})
 total_runtime_ms = int((time.perf_counter() - total_start) * 1000)
 
 print(json.dumps({{
     "tests": out_tests,
-    "total_runtime_ms": total_runtime_ms,
-    "stdout": stdout_buffer.getvalue()
+    "total_runtime_ms": total_runtime_ms
 }}))
 """
     with tempfile.TemporaryDirectory() as d:

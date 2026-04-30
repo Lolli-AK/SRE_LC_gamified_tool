@@ -13,8 +13,8 @@ type ExecuteResponse = {
     expected_json: string;
     runtime_ms: number;
     error?: string;
+    stdout?: string;
   }>;
-  stdout?: string;
   total_runtime_ms: number;
 };
 
@@ -85,6 +85,24 @@ export default function ProblemDetail({ problemId }: { problemId?: string }) {
       {runError && <div className="text-red-600">{runError}</div>}
 
       {runResult && (
+        <div className="rounded border bg-gray-900 text-gray-100 text-sm font-mono p-3">
+          <div className="text-xs text-gray-400 uppercase tracking-wide mb-2">Console</div>
+          {runResult.tests.some((t) => t.stdout) ? (
+            runResult.tests.map((t) =>
+              t.stdout ? (
+                <div key={t.index}>
+                  <span className="text-gray-500 text-xs">[Test {t.index + 1}] </span>
+                  <pre className="whitespace-pre-wrap inline">{t.stdout}</pre>
+                </div>
+              ) : null
+            )
+          ) : (
+            <span className="text-gray-500">No output</span>
+          )}
+        </div>
+      )}
+
+      {runResult && (
         <div className="space-y-2">
           <div className="text-sm">
             Total: <b>{runResult.total_runtime_ms} ms</b>
@@ -98,13 +116,6 @@ export default function ProblemDetail({ problemId }: { problemId?: string }) {
       </b>{" "}
       ({t.runtime_ms} ms)
     </div>
-
-    {runResult.stdout && (
-      <div className="border rounded p-2 text-sm bg-gray-50">
-        <div className="font-semibold mb-1">Console Output</div>
-        <pre className="whitespace-pre-wrap">{runResult.stdout}</pre>
-      </div>
-    )}
 
     {!t.passed && (
       <div className="mt-2 space-y-1 text-xs">

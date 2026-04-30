@@ -13,6 +13,7 @@ class ExecuteTestResult(BaseModel):
     expected_json: str
     runtime_ms: int
     error: Optional[str] = None
+    stdout: Optional[str] = None
 
 class ExecuteResponse(BaseModel):
     tests: List[ExecuteTestResult]
